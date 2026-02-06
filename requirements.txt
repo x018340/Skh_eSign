@@ -4,6 +4,8 @@ gspread
 oauth2client
 streamlit-drawable-canvas
 Pillow
+fpdf
 qrcode
-fpd
-fpdf2
+numpy
+google-api-python-client
+tenacity
