@@ -7,5 +7,5 @@ streamlit-drawable-canvas
 Pillow
 fpdf
 qrcode
-numpy
 tenacity
+numpy
