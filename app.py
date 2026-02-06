@@ -20,4 +20,4 @@ elif (admin_access_param == ADMIN_KEY) or st.session_state.is_admin:
     ensure_data_loaded()
     show_admin()
 else:
-    st.error("⛔ Access Denied.")
+    st.error("⛔ Access Denied. Please scan a valid meeting QR code or use the Admin link.")
