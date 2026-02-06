@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
 from streamlit_drawable_canvas import st_canvas
@@ -17,6 +16,10 @@ import time
 import random
 import textwrap
 from tenacity import retry, stop_after_attempt, wait_exponential
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
+
 
 # --- CONFIGURATION ---
 SHEET_NAME = "esign"
@@ -39,9 +42,12 @@ def get_services():
     
     # Load credentials from Secrets
     creds_dict = dict(st.secrets["gcp_service_account"])
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    
+    # --- MODERN AUTHENTICATION (Using google-auth) ---
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     
     # 1. Sheets Client
+    # gspread supports the new 'creds' object natively
     client_sheets = gspread.authorize(creds)
     
     # 2. Drive API Service
@@ -395,3 +401,4 @@ else:
             ws.clear()
             ws.update([edited.columns.tolist()] + edited.values.tolist())
             st.success("Saved!")
+
