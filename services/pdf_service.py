@@ -2,11 +2,7 @@ import qrcode
 import textwrap
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
-from fpdf import FPDF
 from config import FONT_CH
-from utils import base64_to_image
-import random
-import os
 
 def generate_qr_card(url, m_name, m_loc, m_time):
     m_name = str(m_name)
