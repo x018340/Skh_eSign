@@ -11,7 +11,9 @@ import gspread
 import time
 
 def show_signin(mid_param):
+    ensure_data_loaded = st.session_state.df_info
     df_info = st.session_state.df_info
+    
     meeting = df_info[df_info["MeetingID"].astype(str) == str(mid_param)]
     
     if meeting.empty:
