@@ -1,0 +1,25 @@
+Code_link
+https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/app.py
+https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/config.py
+https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/utils.py
+https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/core/connection.py
+https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/core/state.py
+https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/services/data_service.py
+https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/services/pdf_service.py
+https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/components/admin_view.py
+https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/components/signin_view.py
+
+Structure
+/
+├── app.py              # Entry point & Routing
+├── config.py           # Configuration & Secrets mapping
+├── utils.py            # Formatting & Validation helpers
+├── core/
+│   ├── connection.py   # API Clients (Gspread)
+│   └── state.py        # Session State & Data Sync logic
+├── services/
+│   ├── data_service.py # Google Sheets Read/Write logic
+│   └── pdf_service.py  # QR and PDF generation logic
+└── components/
+    ├── admin_view.py   # Admin Panel UI
+    └── signin_view.py  # Sign-in UI
