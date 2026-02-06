@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from services.data_service import api_read_with_retry
 from core.connection import get_sheet_object
 from core.state import refresh_all_data
 from services.pdf_service import generate_qr_card
@@ -37,12 +36,17 @@ def show_admin():
         if "created_meeting_data" in st.session_state and st.session_state.created_meeting_data:
             lm = st.session_state.created_meeting_data
             st.success(f"🎉 Meeting Created: **{lm['name']}** (ID: {lm['id']})")
+            
             card_bytes = generate_qr_card(lm['url'], lm['name'], lm['loc'], lm['time'])
-            qr_filename = f"{str(lm['date']).replace('-', '')}_{str(lm['name']).replace(' ', '_')}_{lm['id']}.png"
+            clean_date = str(lm['date']).replace("-", "").replace("/", "")
+            clean_name = str(lm['name']).replace(" ", "_")
+            qr_filename = f"{clean_date}_{clean_name}_{lm['id']}.png"
+            
             c1, c2 = st.columns(2)
             with c1: st.image(card_bytes, caption="Preview", width=250)
             with c2:
                 st.download_button("📥 Download QR Card", card_bytes, qr_filename, "image/png", type="primary")
+                st.write("")
                 if st.button("⬅️ Create Another Meeting"):
                     st.session_state.form_name = ""
                     st.session_state.form_loc = ""
@@ -99,8 +103,9 @@ def show_admin():
                 
                 ws_info = get_sheet_object("Meeting_Info")
                 ws_info.append_row(map_dict_to_row(df_info_live.columns.tolist(), {
-                    "MeetingID": new_id, "MeetingName": name, "MeetingDate": str(date), 
-                    "Location": loc, "TimeRange": time_range, "MeetingStatus": "Open" 
+                    "MeetingID": new_id, "MeetingName": name, 
+                    "MeetingDate": str(date), "Location": loc, 
+                    "TimeRange": time_range, "MeetingStatus": "Open" 
                 }))
                 
                 ws_att = get_sheet_object("Meeting_Attendees")
@@ -162,16 +167,21 @@ def show_admin():
                                 break
                         if row_idx > 0:
                             ws_info.update_cell(row_idx, status_idx, new_status)
-                            refresh_all_data()
-                            st.rerun()
+                            refresh_all_data(); st.rerun()
                 with r2:
                     m_url = f"https://{DEPLOYMENT_URL}/?mid={m_id}"
                     qr_bytes = generate_qr_card(m_url, str(m_name), str(m.get('Location')), str(m.get('TimeRange')))
-                    st.download_button("📥 Download QR", qr_bytes, f"{m_id}_qr.png", "image/png", key=f"qr_dl_{m_id}")
+                    clean_date_fn = str(m.get('MeetingDate')).replace("-", "").replace("/", "")
+                    clean_name_fn = str(m_name).replace(" ", "_")
+                    qr_fname = f"{clean_date_fn}_{clean_name_fn}_{m_id}.png"
+                    st.download_button("📥 Download QR", qr_bytes, qr_fname, "image/png", key=f"qr_dl_{m_id}")
                 with r3:
                     pdf_key = f"pdf_{m_id}"
                     if pdf_key in st.session_state.pdf_cache:
-                        st.download_button("📥 Download PDF", st.session_state.pdf_cache[pdf_key], f"{m_id}.pdf", "application/pdf", key=f"dl_{m_id}")
+                        clean_date_fn = str(m.get('MeetingDate')).replace("-", "").replace("/", "")
+                        clean_name_fn = str(m_name).replace(" ", "_")
+                        fname = f"{clean_date_fn}_{clean_name_fn}_{m_id}.pdf"
+                        st.download_button("📥 Download PDF", st.session_state.pdf_cache[pdf_key], fname, "application/pdf", key=f"dl_{m_id}")
                     else:
                         if st.button("📄 Generate PDF", key=f"gen_{m_id}"):
                             with st.spinner("Generating..."):
@@ -187,7 +197,10 @@ def show_admin():
                                 pdf.set_font('CustomFont', '', 24)
                                 pdf.multi_cell(w=0, h=12, txt=f"{fresh_m.get('MeetingName')}簽到", align="C")
                                 pdf.set_font_size(14)
-                                pdf.cell(0, 10, f"時間：{fresh_m.get('TimeRange')}", ln=True, align="C")
+                                
+                                t_range = str(fresh_m.get('TimeRange', ''))
+                                display_time = f"時間：{t_range}" if "/" in t_range else f"時間：{str(fresh_m.get('MeetingDate')).replace('-', '/')} {t_range}"
+                                pdf.cell(0, 10, display_time, ln=True, align="C")
                                 pdf.cell(0, 10, f"地點：{fresh_m.get('Location')}", ln=True, align="C")
                                 pdf.ln(5)
                                 pdf.set_fill_color(230, 230, 230)
