@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 from config import FONT_CH
 
 def generate_qr_card(url, m_name, m_loc, m_time):
+    # IDENTICAL LOGIC
     m_name = str(m_name)
     m_loc = str(m_loc)
     m_time = str(m_time)
