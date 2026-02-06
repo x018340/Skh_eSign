@@ -2,7 +2,6 @@ import pandas as pd
 import gspread
 import time
 from core.connection import get_sheet_object
-from utils import safe_str
 
 def api_read_with_retry(worksheet_name):
     try:
