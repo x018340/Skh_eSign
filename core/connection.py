@@ -2,12 +2,13 @@ import streamlit as st
 import gspread
 import time
 from oauth2client.service_account import ServiceAccountCredentials
-from config import GCP_CREDS, SHEET_NAME
+from config import SHEET_NAME
 
 @st.cache_resource
 def get_gspread_client():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(GCP_CREDS), scope)
+    creds_dict = dict(st.secrets["gcp_service_account"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     return gspread.authorize(creds)
 
 def get_sheet_object(worksheet_name):
