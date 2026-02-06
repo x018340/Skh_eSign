@@ -1,0 +1,13 @@
+/
+├── app.py              # Entry point, Routing, & Auth check
+├── config.py           # Constants, Secrets, and Configuration
+├── core/
+│   ├── connection.py   # Unified Google Auth (Sheets + Drive)
+│   └── state.py        # Session State Initialization
+├── services/
+│   ├── data_service.py # READ/WRITE logic (The "Source of Truth")
+│   └── pdf_service.py  # PDF and QR generation
+├── components/         # UI Fragments
+│   ├── admin_view.py   # Admin Dashboard UI
+│   └── signin_view.py  # Mobile Sign-in UI
+└── utils.py            # Small helper functions (Safe string, formatters)
