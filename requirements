@@ -1,0 +1,9 @@
+streamlit
+pandas
+gspread
+oauth2client
+streamlit-drawable-canvas
+Pillow
+qrcode
+fpd
+fpdf2
