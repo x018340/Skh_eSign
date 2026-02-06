@@ -2,6 +2,7 @@ import pandas as pd
 import gspread
 import time
 from core.connection import get_sheet_object
+from utils import safe_str
 
 def api_read_with_retry(worksheet_name):
     try:
@@ -21,3 +22,8 @@ def api_read_with_retry(worksheet_name):
     except Exception:
         pass
     return pd.DataFrame()
+
+# Note: The main logic for saving signatures is kept in the UI component 
+# (signin_view.py) in the original version to handle the specific retry loop
+# logic with st.error handling. We keep this file mainly for the read function
+# to maintain the split structure without breaking logic.
