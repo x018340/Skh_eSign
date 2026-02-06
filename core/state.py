@@ -1,7 +1,7 @@
 import streamlit as st
 from services.data_service import api_read_with_retry
 
-def init_state():
+def init_data():
     if "df_master" not in st.session_state: st.session_state.df_master = None
     if "df_info" not in st.session_state: st.session_state.df_info = None
     if "df_att" not in st.session_state: st.session_state.df_att = None
