@@ -4,7 +4,7 @@ gspread
 streamlit-drawable-canvas
 Pillow
 qrcode
-fpdf2 (or fpdf, pick one)
+fpdf2
 google-auth
 google-api-python-client
 google-auth-httplib2
