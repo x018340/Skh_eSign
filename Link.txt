@@ -8,6 +8,7 @@ https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/services/dat
 https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/services/pdf_service.py
 https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/components/admin_view.py
 https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/components/signin_view.py
+https://raw.githubusercontent.com/x018340/Skh_eSign/refs/heads/main/requirements.txt
 
 Structure
 /
