@@ -2,12 +2,10 @@ streamlit
 pandas
 gspread
 oauth2client
-streamlit-drawable-canvas
+fpdf
 Pillow
+numpy
+streamlit-drawable-canvas
 qrcode
-fpd
-fpdf2
 google-auth
 google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
