@@ -1,8 +1,5 @@
-import base64
-from io import BytesIO
-
-import pandas as pd
 import streamlit as st
+from io import BytesIO
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
@@ -12,11 +9,11 @@ from utils import is_canvas_blank, safe_int, safe_str
 
 
 def show_signin(mid_param):
-    # --- Persisted error display (so rerun won't wipe it) ---
-    if "last_save_error" in st.session_state and st.session_state["last_save_error"]:
-        st.error(f"❌ Save failed: {st.session_state['last_save_error']}")
+    # Show persistent save error if previous attempt failed
+    if st.session_state.get("last_save_error"):
+        st.error(f"❌ Save error: {st.session_state['last_save_error']}")
         if st.button("Dismiss error"):
-            st.session_state["last_save_error"] = ""
+            del st.session_state["last_save_error"]
             st.rerun()
 
     df_info = st.session_state.df_info
@@ -26,7 +23,6 @@ def show_signin(mid_param):
         st.error(f"❌ Meeting ID {mid_param} not found.")
         if st.button("🔄 Reload Data"):
             from core.state import refresh_all_data
-
             refresh_all_data()
             st.rerun()
         return
@@ -106,7 +102,7 @@ def show_signin(mid_param):
                 st.session_state.processing_sign = True
                 st.rerun()
 
-    # --- SIGNATURE SAVING LOGIC (Upload to Drive + store drive:fileId) ---
+    # --- SIGNATURE SAVING LOGIC ---
     if st.session_state.processing_sign:
         success = False
         try:
@@ -120,14 +116,16 @@ def show_signin(mid_param):
             refresh_attendees_only()
             st.session_state["success_msg"] = f"✅ Saved: {actual_name}"
             st.session_state.signer_select_index = 0
-            st.session_state["last_save_error"] = ""
             success = True
 
         except Exception as e:
-            # Persist error so it remains visible after rerun
+            # Persist the error so it doesn't disappear
             st.session_state["last_save_error"] = str(e)
+            st.error(f"Save Failed: {e}")
 
         finally:
             st.session_state.processing_sign = False
-            # Keep rerun behavior, but error will show at top now
+
+        # Only rerun automatically if it succeeded
+        if success:
             st.rerun()
