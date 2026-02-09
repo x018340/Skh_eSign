@@ -1,5 +1,6 @@
 streamlit
 pandas
+numpy
 gspread
 streamlit-drawable-canvas
 Pillow
