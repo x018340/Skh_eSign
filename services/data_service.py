@@ -1,14 +1,14 @@
 import time
-from io import BytesIO
-from typing import Optional
+from typing import Tuple
+import base64
 
 import gspread
 import pandas as pd
+import requests
 
-from config import DRIVE_SIGNATURE_FOLDER_ID, SIGNATURE_DRIVE_PREFIX
-from core.connection import get_drive_service, get_sheet_object
+from core.connection import get_sheet_object
+from config import GAS_UPLOAD_URL, GAS_API_KEY, GAS_FOLDER_ID, SIGNATURE_GAS_PREFIX
 from utils import safe_str
-
 
 def api_read_with_retry(worksheet_name):
     try:
@@ -29,14 +29,13 @@ def api_read_with_retry(worksheet_name):
         pass
     return pd.DataFrame()
 
-
-def _find_attendee_row(ws, attendee_name: str, meeting_id: str):
+def _find_attendee_row(ws, attendee_name: str, meeting_id: str) -> Tuple[int, int, int]:
     all_rows = ws.get_all_values()
     headers = all_rows[0]
     name_idx = headers.index("AttendeeName")
     mid_idx = headers.index("MeetingID")
     status_col = headers.index("Status") + 1
-    sig_col = headers.index("SignatureBase64") + 1  # keep same column name for compatibility
+    sig_col = headers.index("SignatureBase64") + 1
 
     row_update_idx = -1
     for i, r in enumerate(all_rows):
@@ -45,34 +44,43 @@ def _find_attendee_row(ws, attendee_name: str, meeting_id: str):
         if safe_str(r[name_idx]) == safe_str(attendee_name) and safe_str(r[mid_idx]) == safe_str(meeting_id):
             row_update_idx = i + 1
             break
-
     return row_update_idx, status_col, sig_col
 
+def upload_signature_png_to_gas(png_bytes: bytes, meeting_id: str, attendee_name: str) -> str:
+    if not GAS_UPLOAD_URL or not GAS_API_KEY or not GAS_FOLDER_ID:
+        raise RuntimeError("GAS bridge not configured. Set secrets: [gas].upload_url, api_key, folder_id")
 
-def upload_signature_png_to_drive(png_bytes: bytes, meeting_id: str, attendee_name: str) -> str:
-    """Upload signature PNG bytes to the shared Drive folder and return fileId."""
-    drive = get_drive_service()
-    file_metadata = {
-        "name": f"signature_mid{meeting_id}_{attendee_name}.png",
-        "parents": [DRIVE_SIGNATURE_FOLDER_ID],
+    data_b64 = base64.b64encode(png_bytes).decode("utf-8")
+    payload = {
+        "action": "upload",
+        "api_key": GAS_API_KEY,  # REQUIRED (Apps Script can't reliably read headers)
+        "folderId": GAS_FOLDER_ID,
+        "filename": f"signature_mid{meeting_id}_{safe_str(attendee_name).replace(' ','_')}.png",
         "mimeType": "image/png",
+        "data_base64": data_b64,
     }
 
-    # googleapiclient expects MediaIoBaseUpload
-    from googleapiclient.http import MediaIoBaseUpload  # local import for clearer dependency errors
-    media = MediaIoBaseUpload(BytesIO(png_bytes), mimetype="image/png", resumable=False)
-
-    created = drive.files().create(body=file_metadata, media_body=media, fields="id").execute()
-    return created["id"]
-
+    for i in range(3):
+        try:
+            r = requests.post(GAS_UPLOAD_URL, json=payload, timeout=30)
+            r.raise_for_status()
+            js = r.json()
+            if not js.get("ok"):
+                raise RuntimeError(js.get("error", "GAS upload failed"))
+            file_id = js.get("fileId")
+            if not file_id:
+                raise RuntimeError("GAS upload returned no fileId")
+            return file_id
+        except Exception:
+            if i == 2:
+                raise
+            time.sleep(1 + i)
 
 def save_signature(mid_param: str, attendee_name: str, png_bytes: bytes, retries: int = 10) -> None:
-    """Persist signature: upload PNG to Drive then write drive:<fileId> to sheet."""
     ws_attendees = get_sheet_object("Meeting_Attendees")
 
-    # Upload to Drive first (so a failed sheet write doesn't lose the signature)
-    file_id = upload_signature_png_to_drive(png_bytes, meeting_id=str(mid_param), attendee_name=safe_str(attendee_name))
-    sig_value = f"{SIGNATURE_DRIVE_PREFIX}{file_id}"
+    file_id = upload_signature_png_to_gas(png_bytes, meeting_id=str(mid_param), attendee_name=attendee_name)
+    sig_value = f"{SIGNATURE_GAS_PREFIX}{file_id}"
 
     row_update_idx, status_col, sig_col = _find_attendee_row(ws_attendees, attendee_name, str(mid_param))
     if row_update_idx <= 0:

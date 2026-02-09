@@ -16,11 +16,9 @@ admin_access_param = query_params.get("admin_access", None)
 if mid_param:
     ensure_data_loaded()
     show_signin(mid_param)
-
 elif (admin_access_param == ADMIN_KEY) or st.session_state.is_admin:
     st.session_state.is_admin = True
     ensure_data_loaded()
     show_admin()
-
 else:
     st.error("⛔ Access Denied. Please scan a valid meeting QR code or use the Admin link.")
