@@ -15,7 +15,7 @@ ADMIN_KEY = st.secrets["general"]["admin_password"]  # e.g. "1234" in secrets
 
 # Google Drive (for signature images)
 # Folder already created and shared with the service account
-DRIVE_SIGNATURE_FOLDER_ID = "1OwuotOU_w8wV1C9AU78aK4K7Qxmvf_Y4"
+DRIVE_FOLDER_ID = "1OwuotOU_w8wV1C9AU78aK4K7Qxmvf_Y4"
 
 # Signature storage format in Google Sheets:
 # - Legacy: data:image/png;base64,...
