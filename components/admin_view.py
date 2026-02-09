@@ -3,16 +3,17 @@ import random
 import time
 from datetime import datetime
 
+import gspread
 import pandas as pd
 import streamlit as st
 from fpdf import FPDF
-import gspread
 
 from config import DEPLOYMENT_URL, FONT_CH
 from core.connection import get_drive_service, get_sheet_object
 from core.state import refresh_all_data
 from services.pdf_service import generate_qr_card
 from utils import image_from_signature_value, map_dict_to_row, safe_int, safe_str
+
 
 def show_admin():
     st.sidebar.title("Navigation")

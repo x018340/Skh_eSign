@@ -1,6 +1,5 @@
 import base64
 from io import BytesIO
-import time
 
 import gspread
 import pandas as pd
@@ -11,6 +10,7 @@ from streamlit_drawable_canvas import st_canvas
 from core.state import refresh_attendees_only
 from services.data_service import save_signature
 from utils import is_canvas_blank, safe_int, safe_str
+
 
 def show_signin(mid_param):
     df_info = st.session_state.df_info
@@ -89,46 +89,31 @@ def show_signin(mid_param):
         key=f"canvas_{actual_name}_{c_width}",
     )
 
-    # --- UPDATED SAVING LOGIC ---
-    # We moved the logic INSIDE the button check.
-    # We use st.status to show progress.
-    # We DO NOT rerun if there is an exception, so you can read the error.
-    
-    if st.button("Confirm Signature", type="primary"):
-        if is_canvas_blank(canvas.image_data):
-            st.warning("⚠️ Please sign on the pad before confirming.")
-        else:
-            # Create a status container that persists
-            with st.status("🚀 Processing Signature...", expanded=True) as status:
-                try:
-                    # 1. Prepare Image
-                    status.write("🖼️ Processing image data...")
-                    img = Image.fromarray(canvas.image_data.astype("uint8"), "RGBA")
-                    buffered = BytesIO()
-                    img.save(buffered, format="PNG")
-                    png_bytes = buffered.getvalue()
+    if st.session_state.processing_sign:
+        st.button("⏳ Saving... Please Wait", disabled=True)
+    else:
+        if st.button("Confirm Signature"):
+            if is_canvas_blank(canvas.image_data):
+                st.warning("⚠️ Please sign on the pad before confirming.")
+            else:
+                st.session_state.processing_sign = True
+                st.rerun()
 
-                    # 2. Upload and Update Sheet (Calls data_service.py)
-                    # This function handles both Drive Upload and Sheet Update
-                    status.write("☁️ Uploading to Google Drive & Updating Sheet...")
-                    save_signature(str(mid_param), safe_str(actual_name), png_bytes, retries=5)
-                    
-                    # 3. Success
-                    status.write("✅ Data successfully saved!")
-                    status.update(label="🎉 Signature Confirmed!", state="complete", expanded=False)
-                    
-                    # 4. Refresh Local Data
-                    refresh_attendees_only()
-                    st.session_state["success_msg"] = f"✅ Saved: {actual_name}"
-                    st.session_state.signer_select_index = 0
-                    
-                    time.sleep(1) # Give user a moment to see the green checkmark
-                    st.rerun()
+    # --- SIGNATURE SAVING LOGIC (Upload to Drive + store drive:fileId) ---
+    if st.session_state.processing_sign:
+        try:
+            img = Image.fromarray(canvas.image_data.astype("uint8"), "RGBA")
+            buffered = BytesIO()
+            img.save(buffered, format="PNG")
+            png_bytes = buffered.getvalue()
 
-                except Exception as e:
-                    # 🛑 ERROR HANDLING: Do NOT rerun. Show the error clearly.
-                    status.update(label="❌ Save Failed", state="error", expanded=True)
-                    st.error(f"**System Error:** {str(e)}")
-                    st.write("Please check:")
-                    st.write("1. Is `google-api-python-client` in requirements.txt?")
-                    st.write("2. Does the Service Account have 'Editor' access to the Drive Folder?")
+            save_signature(str(mid_param), safe_str(actual_name), png_bytes, retries=10)
+
+            refresh_attendees_only()
+            st.session_state["success_msg"] = f"✅ Saved: {actual_name}"
+            st.session_state.signer_select_index = 0
+        except Exception as e:
+            st.error(f"Save Failed (Server Busy). Try again later. ({e})")
+        finally:
+            st.session_state.processing_sign = False
+            st.rerun()

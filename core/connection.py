@@ -4,18 +4,23 @@ import gspread
 
 from config import SHEET_NAME
 
-# Import Google Auth libraries
+# Prefer modern google-auth + google-api-python-client for Drive upload/download.
+# If these packages are missing in your environment, add to requirements.txt:
+#   google-auth
+#   google-api-python-client
 try:
     from google.oauth2.service_account import Credentials
     from googleapiclient.discovery import build
-except Exception:
+except Exception:  # pragma: no cover
     Credentials = None
     build = None
+
 
 SHEETS_SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive",
 ]
+
 
 @st.cache_resource
 def get_credentials():
@@ -23,14 +28,16 @@ def get_credentials():
     if Credentials is None:
         raise ImportError(
             "Missing google-auth / google-api-python-client. "
-            "Please add 'google-auth' and 'google-api-python-client' to requirements.txt"
+            "Install: google-auth, google-api-python-client"
         )
     return Credentials.from_service_account_info(creds_dict, scopes=SHEETS_SCOPES)
+
 
 @st.cache_resource
 def get_gspread_client():
     creds = get_credentials()
     return gspread.authorize(creds)
+
 
 @st.cache_resource
 def get_drive_service():
@@ -39,7 +46,9 @@ def get_drive_service():
         raise ImportError(
             "Missing google-api-python-client. Install: google-api-python-client"
         )
+    # cache_discovery=False reduces some hosting issues
     return build("drive", "v3", credentials=creds, cache_discovery=False)
+
 
 def get_sheet_object(worksheet_name: str):
     client = get_gspread_client()
