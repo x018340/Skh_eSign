@@ -348,6 +348,7 @@ def show_admin():
                                         tmp_name = f"tmp_{m_id}_{i}_{random.randint(1000,9999)}.png"
                                         img.save(tmp_name, format="PNG")
                                         pdf.image(tmp_name, x+35, y+4, h=17)
+                                    
                                         try:
                                             os.remove(tmp_name)
                                         except Exception:
