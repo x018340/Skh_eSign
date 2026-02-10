@@ -308,7 +308,7 @@ def show_admin():
                                 st.error("Sync Error. Try again.")
                                 st.stop()
                             fresh_m = fresh_m_list.iloc[0]
-                            fresh_att_subset = fresh_att[fresh_att["MeetingID"].astype(str) == m_id]
+                            fresh_att_subset = fresh_att[fresh_att["MeetingID"].astype(str) == m_id].copy()
 
                             with st.spinner("Generating..."):
                                 if "RankID" in fresh_att_subset.columns:
