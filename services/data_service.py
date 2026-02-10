@@ -53,7 +53,7 @@ def upload_signature_png_to_gas(png_bytes: bytes, meeting_id: str, attendee_name
     data_b64 = base64.b64encode(png_bytes).decode("utf-8")
     payload = {
         "action": "upload",
-        "api_key": GAS_API_KEY,  # REQUIRED (Apps Script can't reliably read headers)
+        "api_key": GAS_API_KEY,
         "folderId": GAS_FOLDER_ID,
         "filename": f"signature_mid{meeting_id}_{safe_str(attendee_name).replace(' ','_')}.png",
         "mimeType": "image/png",
@@ -76,7 +76,8 @@ def upload_signature_png_to_gas(png_bytes: bytes, meeting_id: str, attendee_name
                 raise
             time.sleep(1 + i)
 
-def save_signature(mid_param: str, attendee_name: str, png_bytes: bytes, retries: int = 10) -> None:
+# ⚡ CHANGE: Return 'str' instead of 'None'
+def save_signature(mid_param: str, attendee_name: str, png_bytes: bytes, retries: int = 10) -> str:
     ws_attendees = get_sheet_object("Meeting_Attendees")
 
     file_id = upload_signature_png_to_gas(png_bytes, meeting_id=str(mid_param), attendee_name=attendee_name)
@@ -92,8 +93,10 @@ def save_signature(mid_param: str, attendee_name: str, png_bytes: bytes, retries
                 {"range": gspread.utils.rowcol_to_a1(row_update_idx, status_col), "values": [["Signed"]]},
                 {"range": gspread.utils.rowcol_to_a1(row_update_idx, sig_col), "values": [[sig_value]]},
             ])
-            return
+            # ⚡ CHANGE: Return the signature value we just saved
+            return sig_value
         except gspread.exceptions.APIError as e:
             if i == retries - 1:
                 raise
             time.sleep(2 + i)
+    return sig_value
