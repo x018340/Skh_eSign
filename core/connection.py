@@ -4,15 +4,17 @@ import gspread
 
 from config import SHEET_NAME
 
+SHEETS_SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
+
+# We keep oauth2client out; use google-auth via gspread if available.
 try:
     from google.oauth2.service_account import Credentials
 except Exception:  # pragma: no cover
     Credentials = None
 
-SHEETS_SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
 
 @st.cache_resource
 def get_credentials():
@@ -21,10 +23,12 @@ def get_credentials():
         raise ImportError("Missing google-auth. Install: google-auth")
     return Credentials.from_service_account_info(creds_dict, scopes=SHEETS_SCOPES)
 
+
 @st.cache_resource
 def get_gspread_client():
     creds = get_credentials()
     return gspread.authorize(creds)
+
 
 def get_sheet_object(worksheet_name: str):
     client = get_gspread_client()

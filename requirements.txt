@@ -1,10 +1,10 @@
 streamlit
 pandas
-numpy
 gspread
-streamlit-drawable-canvas
-Pillow
-qrcode
-fpdf2
 google-auth
 requests
+Pillow
+numpy
+fpdf2
+qrcode
+streamlit-drawable-canvas

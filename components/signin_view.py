@@ -7,7 +7,9 @@ from core.state import refresh_attendees_only, refresh_all_data
 from services.data_service import save_signature
 from utils import is_canvas_blank, safe_int, safe_str
 
+
 def show_signin(mid_param):
+    # Persist save errors across reruns
     if st.session_state.get("last_save_error"):
         st.error(f"❌ Save error: {st.session_state['last_save_error']}")
         if st.button("Dismiss error"):
@@ -20,12 +22,12 @@ def show_signin(mid_param):
     if meeting.empty:
         st.error(f"❌ Meeting ID {mid_param} not found.")
         if st.button("🔄 Reload Data"):
-            refresh_all_data()
+            refresh_all_data(show_spinner=True)
             st.rerun()
         return
 
     m = meeting.iloc[0]
-    status = m.get('MeetingStatus', 'Open')
+    status = m.get("MeetingStatus", "Open")
 
     st.title(f"{m.get('MeetingName', 'No Name')}")
     st.write(f"📍 **{m.get('Location', '')}**")
@@ -48,7 +50,7 @@ def show_signin(mid_param):
         current_att = current_att.sort_values("RankID_Int")
 
     def fmt(row):
-        icon = "✅ " if row.get('Status') == "Signed" else "⬜ "
+        icon = "✅ " if row.get("Status") == "Signed" else "⬜ "
         return f"{icon}{row.get('AttendeeName')} ({row.get('JobTitle')})"
 
     options = current_att.apply(fmt, axis=1).tolist()
@@ -60,7 +62,7 @@ def show_signin(mid_param):
         "Select your name to sign:",
         ["-- Select --"] + options,
         index=st.session_state.signer_select_index,
-        key="signer_sb"
+        key="signer_sb",
     )
 
     if selection == "-- Select --":
@@ -86,39 +88,38 @@ def show_signin(mid_param):
         background_color="#FFFFFF",
         height=c_height,
         width=c_width,
-        key=f"canvas_{actual_name}_{c_width}"
+        key=f"canvas_{actual_name}_{c_width}",
     )
 
     if st.session_state.processing_sign:
         st.button("⏳ Saving... Please Wait", disabled=True)
-    else:
-        if st.button("Confirm Signature"):
-            if is_canvas_blank(canvas.image_data):
-                st.warning("⚠️ Please sign on the pad before confirming.")
-            else:
-                st.session_state.processing_sign = True
-                st.rerun()
+        return
+
+    if st.button("Confirm Signature"):
+        if is_canvas_blank(canvas.image_data):
+            st.warning("⚠️ Please sign on the pad before confirming.")
+            return
+        st.session_state.processing_sign = True
+        st.rerun()
 
     if st.session_state.processing_sign:
         success = False
         try:
-            img = Image.fromarray(canvas.image_data.astype('uint8'), 'RGBA')
+            img = Image.fromarray(canvas.image_data.astype("uint8"), "RGBA")
             buffered = BytesIO()
             img.save(buffered, format="PNG")
             png_bytes = buffered.getvalue()
 
             save_signature(str(mid_param), safe_str(actual_name), png_bytes, retries=10)
-
             refresh_attendees_only()
+
             st.session_state["success_msg"] = f"✅ Saved: {actual_name}"
             st.session_state.signer_select_index = 0
             success = True
-
         except Exception as e:
             st.session_state["last_save_error"] = str(e)
             st.error(f"Save Failed: {e}")
         finally:
             st.session_state.processing_sign = False
-
-        if success:
-            st.rerun()
+            if success:
+                st.rerun()
