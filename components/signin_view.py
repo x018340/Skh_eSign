@@ -3,7 +3,8 @@ from io import BytesIO
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
-from core.state import refresh_attendees_only, refresh_all_data
+# Remove refresh_attendees_only from imports
+from core.state import refresh_all_data
 from services.data_service import save_signature
 from utils import is_canvas_blank, safe_int, safe_str
 
@@ -107,9 +108,21 @@ def show_signin(mid_param):
             img.save(buffered, format="PNG")
             png_bytes = buffered.getvalue()
 
-            save_signature(str(mid_param), safe_str(actual_name), png_bytes, retries=10)
+            # 1. Save to Cloud (returns "gas:FILE_ID")
+            sig_val = save_signature(str(mid_param), safe_str(actual_name), png_bytes, retries=10)
 
-            refresh_attendees_only()
+            # 2. ⚡ SPEED FIX: Update Local Session State directly
+            # Instead of downloading the whole sheet again (slow), we just update the specific cell in memory.
+            df = st.session_state.df_att
+            mask = (df["MeetingID"].astype(str) == str(mid_param)) & (df["AttendeeName"].astype(str) == safe_str(actual_name))
+            
+            if mask.any():
+                idx = df.index[mask][0]
+                st.session_state.df_att.at[idx, "Status"] = "Signed"
+                st.session_state.df_att.at[idx, "SignatureBase64"] = sig_val
+                # Clear PDF cache since data changed
+                st.session_state.pdf_cache = {}
+
             st.session_state["success_msg"] = f"✅ Saved: {actual_name}"
             st.session_state.signer_select_index = 0
             success = True
