@@ -6,9 +6,11 @@ from PIL import Image, ImageDraw, ImageFont
 from config import FONT_CH
 
 def generate_qr_card(url, m_name, m_loc, m_time):
+    # Force string type to prevent "int has no attribute expandtabs" error
     m_name = str(m_name)
     m_loc = str(m_loc)
     m_time = str(m_time)
+
     qr = qrcode.make(url)
     qr = qr.resize((350, 350))
     W, H = 600, 850
@@ -21,6 +23,7 @@ def generate_qr_card(url, m_name, m_loc, m_time):
         font_header = ImageFont.load_default()
         font_body = ImageFont.load_default()
 
+    # 1. Meeting Name (Wrapped)
     wrapper = textwrap.TextWrapper(width=14)
     name_lines = wrapper.wrap(text=m_name)
     current_h = 60
@@ -28,13 +31,16 @@ def generate_qr_card(url, m_name, m_loc, m_time):
         draw.text((W/2, current_h), line, fill="black", font=font_header, anchor="mm")
         current_h += 55
 
+    # 2. Location & Time
     current_h += 20
     info_text = f"地點：{m_loc}\n時間：{m_time}"
     draw.multiline_text((W/2, current_h), info_text, fill="black", font=font_body, anchor="ma", align="center")
 
+    # 3. Label
     current_h += 100
     draw.text((W/2, current_h), "會議簽到", fill="black", font=font_body, anchor="mm")
 
+    # 4. QR Code
     current_h += 30
     qr_x = (W - 350) // 2
     img.paste(qr, (qr_x, current_h))
