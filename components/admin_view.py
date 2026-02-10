@@ -16,6 +16,7 @@ from services.pdf_service import generate_qr_card
 from utils import image_from_signature_value, map_dict_to_row, safe_int, safe_str
 from utils import make_white_background_transparent
 
+@st.cache_data(ttl=300)
 def _gas_ping():
     if not GAS_UPLOAD_URL:
         return False, "Missing gas.upload_url"
