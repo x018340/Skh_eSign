@@ -14,6 +14,7 @@ from core.connection import get_sheet_object
 from core.state import refresh_all_data
 from services.pdf_service import generate_qr_card
 from utils import image_from_signature_value, map_dict_to_row, safe_int, safe_str
+from utils import make_white_background_transparent
 
 def _gas_ping():
     if not GAS_UPLOAD_URL:
@@ -340,13 +341,17 @@ def show_admin():
                                     x, y = pdf.get_x(), pdf.get_y()
                                     pdf.cell(110, 25, "", 1, 1)
 
-                                    img = image_from_signature_value(row.get('SignatureBase64'))
                                     if img is not None:
+                                        # Make background transparent (so it overlays nicely on any PDF/template)
+                                        img = make_white_background_transparent(img, threshold=245)
+                                    
                                         tmp_name = f"tmp_{m_id}_{i}_{random.randint(1000,9999)}.png"
-                                        img.save(tmp_name)
+                                        img.save(tmp_name, format="PNG")
                                         pdf.image(tmp_name, x+35, y+4, h=17)
-                                        try: os.remove(tmp_name)
-                                        except Exception: pass
+                                        try:
+                                            os.remove(tmp_name)
+                                        except Exception:
+                                            pass
 
                                 out = pdf.output(dest="S")
                                 pdf_bytes = bytes(out)  # works if out is bytearray/bytes
