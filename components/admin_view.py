@@ -343,6 +343,7 @@ def show_admin():
 
                                     sig_val = row.get("SignatureBase64")
                                     img = image_from_signature_value(sig_val)
+                                    
                                     if img is not None:
                                         # Make background transparent (so it overlays nicely on any PDF/template)
                                         img = make_white_background_transparent(img, threshold=245)
