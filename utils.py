@@ -79,3 +79,24 @@ def image_from_signature_value(sig_val: str) -> Optional[Image.Image]:
     if kind == "gas":
         return _gas_download_file_as_image(payload)
     return None
+
+def make_white_background_transparent(img: Image.Image, threshold: int = 245) -> Image.Image:
+    """
+    Convert near-white pixels to transparent. Keeps strokes intact.
+    threshold: 0-255, higher = only pure whites removed, lower = more aggressive.
+    """
+    if img is None:
+        return img
+
+    rgba = img.convert("RGBA")
+    datas = rgba.getdata()
+
+    new_data = []
+    for r, g, b, a in datas:
+        # Treat near-white as background
+        if r >= threshold and g >= threshold and b >= threshold:
+            new_data.append((r, g, b, 0))   # transparent
+        else:
+            new_data.append((r, g, b, 255)) # fully opaque strokes
+    rgba.putdata(new_data)
+    return rgba
