@@ -14,7 +14,7 @@ from core.connection import get_sheet_object
 from core.state import refresh_all_data
 from services.pdf_service import generate_qr_card
 from utils import image_from_signature_value, map_dict_to_row, safe_int, safe_str
-from utils import make_white_background_transparent
+from utils import make_white_background_transparent, base64_to_image
 
 @st.cache_data(ttl=300)
 def _gas_ping():
@@ -41,33 +41,6 @@ def show_admin():
         st.sidebar.error("❌ GAS offline")
         st.sidebar.caption(msg)
 
-    if st.sidebar.button("🧪 Test Upload"):
-        if not (GAS_UPLOAD_URL and GAS_API_KEY and GAS_FOLDER_ID):
-            st.sidebar.error("Set gas.upload_url, gas.api_key, gas.folder_id in secrets.")
-        else:
-            try:
-                tiny_png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/YYp7GkAAAAASUVORK5CYII="
-                payload = {
-                    "action": "upload",
-                    "api_key": GAS_API_KEY,
-                    "folderId": GAS_FOLDER_ID,
-                    "filename": f"test_{int(time.time())}.png",
-                    "mimeType": "image/png",
-                    "data_base64": tiny_png_b64,
-                }
-                r = requests.post(GAS_UPLOAD_URL, json=payload, timeout=20)
-                r.raise_for_status()
-                js = r.json()
-                if js.get("ok") and js.get("fileId"):
-                    st.sidebar.success("Upload OK")
-                    st.sidebar.caption(f"fileId: {js['fileId']}")
-                else:
-                    st.sidebar.error("Upload failed")
-                    st.sidebar.caption(str(js))
-            except Exception as e:
-                st.sidebar.error("Upload failed")
-                st.sidebar.caption(str(e))
-
     if st.sidebar.button("🔄 Refresh Data (Sync)"):
         refresh_all_data()
         st.session_state.meeting_limit = 10
@@ -80,7 +53,7 @@ def show_admin():
         st.title("Arrange New Meeting")
 
         df_master = st.session_state.df_master
-        if df_master is None or df_master.empty or "FullName" not in df_master.columns:
+        if df_master is None or df_master.empty:
             st.warning("⚠️ Database connection unstable. Please click Refresh.")
             if st.button("🔄 Retry Connection"):
                 refresh_all_data()
@@ -154,7 +127,7 @@ def show_admin():
         st.divider()
         is_valid = bool(name and loc and selected_names)
 
-        if "processing_create" not in st.session_state: 
+        if "processing_create" not in st.session_state:
             st.session_state.processing_create = False
 
         if st.session_state.processing_create:
@@ -172,9 +145,9 @@ def show_admin():
 
             ws_info = get_sheet_object("Meeting_Info")
             ws_info.append_row(map_dict_to_row(df_info_live.columns.tolist(), {
-                "MeetingID": new_id, "MeetingName": name, 
-                "MeetingDate": str(date), "Location": loc, 
-                "TimeRange": time_range, "MeetingStatus": "Open" 
+                "MeetingID": new_id, "MeetingName": name,
+                "MeetingDate": str(date), "Location": loc,
+                "TimeRange": time_range, "MeetingStatus": "Open"
             }))
 
             ws_att = get_sheet_object("Meeting_Attendees")
@@ -249,7 +222,6 @@ def show_admin():
                         new_status = "Close" if status == "Open" else "Open"
                         try:
                             ws_info = get_sheet_object("Meeting_Info")
-
                             all_vals = []
                             for i in range(3):
                                 try:
@@ -282,7 +254,7 @@ def show_admin():
                                 refresh_all_data()
                                 st.rerun()
                         except Exception as e:
-                            st.error(f"Operation failed due to connection: {e}")
+                            st.error(f"Operation failed: {e}")
 
                 with r2:
                     m_url = f"https://{DEPLOYMENT_URL}/?mid={m_id}"
@@ -344,28 +316,25 @@ def show_admin():
 
                                     sig_val = row.get("SignatureBase64")
                                     img = image_from_signature_value(sig_val)
-                                    
+
                                     if img is not None:
-                                        # Make background transparent (so it overlays nicely on any PDF/template)
                                         img = make_white_background_transparent(img, threshold=245)
-                                    
                                         tmp_name = f"tmp_{m_id}_{i}_{random.randint(1000,9999)}.png"
                                         img.save(tmp_name, format="PNG")
                                         pdf.image(tmp_name, x+35, y+4, h=17)
-                                    
                                         try:
                                             os.remove(tmp_name)
                                         except Exception:
                                             pass
 
                                 out = pdf.output(dest="S")
-                                pdf_bytes = bytes(out)  # works if out is bytearray/bytes
+                                pdf_bytes = bytes(out)
                                 st.session_state.pdf_cache[pdf_key] = pdf_bytes
                                 st.rerun()
 
         if not s_id and not s_date:
             st.divider()
-            if st.button("⬇️ Load 10 More Records", type="secondary", use_container_width=True):
+            if st.button("⬇️ Load 10 More Records", type="secondary", width="stretch"):
                 st.session_state.meeting_limit += 10
                 st.rerun()
 
@@ -373,11 +342,8 @@ def show_admin():
     elif menu == "👥 Employee Master":
         st.title("Employee Master")
         df_master = st.session_state.df_master
-        if df_master is None or df_master.empty or "FullName" not in df_master.columns:
-            st.warning("⚠️ Database connection unstable or empty. Please click Refresh.")
-            if st.button("🔄 Retry Connection"):
-                refresh_all_data()
-                st.rerun()
+        if df_master is None or df_master.empty:
+            st.warning("⚠️ Database connection unstable. Please click Refresh.")
             st.stop()
 
         with st.expander("➕ Add New Employee", expanded=False):
@@ -411,7 +377,7 @@ def show_admin():
             edited_df = st.data_editor(
                 st.session_state.df_master,
                 num_rows="dynamic",
-                use_container_width=True,
+                width="stretch",
                 height=600
             )
 
