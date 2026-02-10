@@ -341,6 +341,8 @@ def show_admin():
                                     x, y = pdf.get_x(), pdf.get_y()
                                     pdf.cell(110, 25, "", 1, 1)
 
+                                    sig_val = row.get("SignatureBase64")
+                                    img = image_from_signature_value(sig_val)
                                     if img is not None:
                                         # Make background transparent (so it overlays nicely on any PDF/template)
                                         img = make_white_background_transparent(img, threshold=245)
