@@ -348,7 +348,8 @@ def show_admin():
                                         try: os.remove(tmp_name)
                                         except Exception: pass
 
-                                pdf_bytes = pdf.output(dest="S").encode("latin-1")
+                                out = pdf.output(dest="S")
+                                pdf_bytes = bytes(out)  # works if out is bytearray/bytes
                                 st.session_state.pdf_cache[pdf_key] = pdf_bytes
                                 st.rerun()
 
